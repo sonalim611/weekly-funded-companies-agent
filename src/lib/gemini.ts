@@ -2,15 +2,22 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { buildAnalysisPrompt } from "./prompt";
 import type { Startup } from "./startups";
 
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+const MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"];
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
-function isRetryableError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isTransientError(error: unknown): boolean {
   return /503|429|500|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand|overloaded/i.test(
-    message
+    errorMessage(error)
   );
+}
+
+function isModelUnavailableError(error: unknown): boolean {
+  return /404|not found|NOT_FOUND/i.test(errorMessage(error));
 }
 
 function delay(ms: number): Promise<void> {
@@ -44,7 +51,7 @@ async function generateWithModel(
     } catch (error) {
       lastError = error;
 
-      if (!isRetryableError(error) || attempt === MAX_RETRIES - 1) {
+      if (isModelUnavailableError(error) || !isTransientError(error) || attempt === MAX_RETRIES - 1) {
         throw error;
       }
 
@@ -78,7 +85,7 @@ export async function analyzeResumeForStartup(
     } catch (error) {
       lastError = error;
 
-      if (!isRetryableError(error)) {
+      if (!isTransientError(error) && !isModelUnavailableError(error)) {
         throw error;
       }
 
