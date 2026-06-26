@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { HeaderActions } from "@/components/HeaderActions";
 import type { Startup } from "@/lib/startups";
 
 interface AnalysisResult {
@@ -29,8 +30,18 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const resultsRef = useRef<HTMLElement>(null);
 
   const selectedStartup = startups.find((s) => s.id === startupId);
+
+  useEffect(() => {
+    if (!result || !resultsRef.current) return;
+
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    if (isMobile) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [result]);
 
   useEffect(() => {
     async function loadStartups() {
@@ -100,38 +111,46 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-card-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <h1 className="text-2xl font-semibold tracking-tight">Start With Startup</h1>
-          <p className="text-muted text-sm mt-1">
-            A weekly AI agent that finds recently funded startups and creates a personalized
-            application strategy
-          </p>
-          {weekRange && (
-            <p className="text-xs text-muted/70 mt-1">
-              {usedFallback
-                ? `Few launches this week — showing ${startups.length} recent YC startups`
-                : `This week (${weekRange})`}
-              {startupsSource ? ` · ${startupsSource}` : ""}
-            </p>
-          )}
+        <div className={`mx-auto px-4 sm:px-6 py-4 sm:py-5 ${result ? "max-w-7xl" : "max-w-5xl"}`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Start With Startup</h1>
+              <p className="text-muted text-sm mt-1">
+                A weekly AI agent that finds recently funded startups and creates a personalized
+                application strategy
+              </p>
+              {weekRange && (
+                <p className="text-xs text-muted/70 mt-1">
+                  {usedFallback
+                    ? `Few launches this week — showing ${startups.length} recent YC startups`
+                    : `This week (${weekRange})`}
+                  {startupsSource ? ` · ${startupsSource}` : ""}
+                </p>
+              )}
+            </div>
+            <HeaderActions />
+          </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-2">
-          <section className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="rounded-xl border border-card-border bg-card p-6 space-y-4">
-                <h2 className="text-lg font-medium">1. Upload Resume</h2>
+      <main className={`mx-auto px-4 sm:px-6 py-8 sm:py-10 ${result ? "max-w-7xl" : "max-w-5xl"}`}>
+        <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+          <section className="flex flex-col lg:max-h-[calc(100vh-8rem)] lg:overflow-hidden lg:pr-1">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 gap-4">
+              <div className="rounded-xl border border-card-border bg-card p-4 shrink-0">
+                <h2 className="text-sm font-medium text-muted mb-2">1. Upload Resume</h2>
                 <label
                   htmlFor="resume"
-                  className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-card-border rounded-lg cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-3 border border-dashed border-card-border rounded-lg cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
                 >
                   <svg
-                    className="w-8 h-8 text-muted mb-2"
+                    className="w-5 h-5 text-muted shrink-0"
+                    width="20"
+                    height="20"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -140,9 +159,12 @@ export default function HomePage() {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  <span className="text-sm text-muted">
+                  <span className="text-sm text-muted truncate min-w-0">
                     {file ? file.name : "Click to upload PDF"}
                   </span>
+                  {file && (
+                    <span className="text-xs text-accent shrink-0 ml-auto">Change</span>
+                  )}
                   <input
                     id="resume"
                     type="file"
@@ -157,9 +179,9 @@ export default function HomePage() {
                 </label>
               </div>
 
-              <div className="rounded-xl border border-card-border bg-card p-6 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-lg font-medium">2. Select Startup</h2>
+              <div className="rounded-xl border border-card-border bg-card p-4 flex flex-col flex-1 min-h-0 space-y-3">
+                <div className="flex items-center justify-between gap-2 shrink-0">
+                  <h2 className="text-sm font-medium text-muted">2. Select Startup</h2>
                   {!startupsLoading && (
                     <span className="text-xs text-muted">
                       {startups.length} {usedFallback ? "recent" : "this week"}
@@ -192,7 +214,7 @@ export default function HomePage() {
                     No startups available right now. Check back later.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+                  <div className="space-y-2 flex-1 min-h-[16rem] lg:min-h-0 overflow-y-auto pr-1 analysis-scroll">
                     {startups.map((startup) => (
                       <label
                         key={startup.id}
@@ -240,7 +262,7 @@ export default function HomePage() {
               </div>
 
               {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 shrink-0">
                   {error}
                 </div>
               )}
@@ -248,7 +270,7 @@ export default function HomePage() {
               <button
                 type="submit"
                 disabled={loading || startupsLoading || !file || !startupId}
-                className="w-full py-3 px-4 rounded-lg bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+                className="w-full py-3 px-4 rounded-lg bg-accent hover:bg-accent-hover text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors shrink-0"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -277,9 +299,12 @@ export default function HomePage() {
             </form>
           </section>
 
-          <section>
+          <section
+            ref={resultsRef}
+            className="lg:sticky lg:top-24 scroll-mt-24"
+          >
             {loading && (
-              <div className="rounded-xl border border-card-border bg-card p-8 text-center">
+              <div className="rounded-xl border border-card-border bg-card p-8 text-center lg:max-h-[calc(100vh-8rem)]">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/20 mb-4">
                   <svg className="animate-spin h-6 w-6 text-accent" viewBox="0 0 24 24">
                     <circle
@@ -329,16 +354,19 @@ export default function HomePage() {
             )}
 
             {!loading && result && (
-              <div className="rounded-xl border border-card-border bg-card overflow-hidden">
-                <div className="px-6 py-4 border-b border-card-border bg-accent/5">
+              <div className="rounded-xl border border-card-border bg-card overflow-hidden flex flex-col max-h-[min(75vh,calc(100vh-10rem))] sm:max-h-[min(80vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)]">
+                <div className="shrink-0 px-4 sm:px-6 py-4 border-b border-card-border bg-accent/5">
                   <h2 className="text-lg font-medium">
                     Analysis for {result.startup.name}
                   </h2>
                   <p className="text-sm text-muted mt-0.5">
                     {result.startup.fundingAmount} · {result.startup.industry}
                   </p>
+                  <p className="text-xs text-muted/70 mt-2">
+                    Scroll inside this panel to read your full analysis
+                  </p>
                 </div>
-                <div className="px-6 py-5 prose-analysis">
+                <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 prose-analysis analysis-scroll">
                   <ReactMarkdown>{result.analysis}</ReactMarkdown>
                 </div>
               </div>

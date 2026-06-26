@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { FeedbackProvider } from "@/components/FeedbackWidget";
+import { PostHogProvider } from "@/components/PostHogProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,15 +21,33 @@ export const metadata: Metadata = {
     "A weekly AI agent that finds recently funded startups and creates a personalized application strategy",
 };
 
+const themeScript = `
+  (function () {
+    try {
+      var theme = localStorage.getItem("theme");
+      if (theme === "light") {
+        document.documentElement.classList.add("light");
+      }
+    } catch (e) {}
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+        <ThemeProvider>
+          <PostHogProvider>
+            <FeedbackProvider>{children}</FeedbackProvider>
+          </PostHogProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
