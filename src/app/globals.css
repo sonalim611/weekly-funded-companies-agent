@@ -3,42 +3,70 @@
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
 
 @theme inline {
-  --color-background: #0a0a0f;
-  --color-foreground: #f4f4f5;
-  --color-card: #14141c;
-  --color-card-border: #27272f;
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-muted: #a1a1aa;
+  --color-background: #eef1f6;
+  --color-foreground: #1a1a2e;
+  --color-card: #ffffff;
+  --color-card-border: #e8ecf2;
+  --color-accent: #5b5fc7;
+  --color-accent-hover: #4a4eb5;
+  --color-muted: #6b7280;
+  --color-sidebar-from: #00c6ff;
+  --color-sidebar-to: #7c3aed;
+  --color-gradient-from: #00c6ff;
+  --color-gradient-to: #9218ee;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-html.light {
-  --color-background: #f8fafc;
-  --color-foreground: #18181b;
-  --color-card: #ffffff;
-  --color-card-border: #e4e4e7;
-  --color-accent: #6366f1;
-  --color-accent-hover: #4f46e5;
-  --color-muted: #71717a;
-  --prose-body: #3f3f46;
-  --prose-code-bg: #f4f4f5;
-  --scrollbar-thumb: #d4d4d8;
-  --scrollbar-thumb-hover: #a1a1aa;
-}
-
-html:not(.light) {
+html.dark {
+  --color-background: #0f1117;
+  --color-foreground: #f4f4f5;
+  --color-card: #1a1d27;
+  --color-card-border: #2a2f3d;
+  --color-accent: #818cf8;
+  --color-accent-hover: #a5b4fc;
+  --color-muted: #9ca3af;
+  --color-sidebar-from: #0891b2;
+  --color-sidebar-to: #6d28d9;
+  --color-gradient-from: #0891b2;
+  --color-gradient-to: #7c3aed;
   --prose-body: #d4d4d8;
-  --prose-code-bg: #1e1e28;
+  --prose-code-bg: #252830;
   --scrollbar-thumb: #3f3f46;
   --scrollbar-thumb-hover: #52525b;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+html:not(.dark) {
+  --prose-body: #4b5563;
+  --prose-code-bg: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+  --shadow-card: 0 4px 24px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 2px 12px rgba(15, 23, 42, 0.04);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-gradient-from), var(--color-gradient-to));
+}
+
+.gradient-sidebar {
+  background: linear-gradient(180deg, var(--color-sidebar-from) 0%, var(--color-sidebar-to) 100%);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
 }
 
 .prose-analysis h1,

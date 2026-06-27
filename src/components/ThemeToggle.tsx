@@ -3,7 +3,7 @@
 import { useTheme } from "@/components/ThemeProvider";
 
 const buttonClassName =
-  "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-card-border text-sm font-medium text-muted hover:text-foreground hover:border-accent/40 transition-colors";
+  "inline-flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:px-3 sm:py-2 rounded-full border border-card-border bg-card shadow-soft text-sm font-medium text-muted hover:text-foreground hover:border-accent/40 transition-colors";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();

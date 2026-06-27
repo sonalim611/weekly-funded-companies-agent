@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { HeaderActions } from "@/components/HeaderActions";
+import { DashboardHeader } from "@/components/DashboardHeader";
+import { Sidebar } from "@/components/Sidebar";
+import { StartupCard } from "@/components/StartupCard";
 import type { Startup } from "@/lib/startups";
 
 interface AnalysisResult {
@@ -27,12 +29,27 @@ export default function HomePage() {
   const [usedFallback, setUsedFallback] = useState(false);
   const [startupsLoading, setStartupsLoading] = useState(true);
   const [startupId, setStartupId] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
+  const startupsRef = useRef<HTMLElement>(null);
 
   const selectedStartup = startups.find((s) => s.id === startupId);
+  const hiringCount = startups.filter((s) => s.isHiring).length;
+
+  const filteredStartups = startups.filter((startup) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      startup.name.toLowerCase().includes(q) ||
+      startup.industry.toLowerCase().includes(q) ||
+      startup.description.toLowerCase().includes(q) ||
+      (startup.location?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   useEffect(() => {
     if (!result || !resultsRef.current) return;
@@ -67,27 +84,30 @@ export default function HomePage() {
     loadStartups();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function runAnalysis(targetStartupId?: string) {
+    const id = targetStartupId ?? startupId;
     setError(null);
-    setResult(null);
 
     if (!file) {
-      setError("Please upload your resume PDF.");
+      setError("Please upload your resume PDF first.");
+      fileInputRef.current?.click();
       return;
     }
 
-    if (!startupId) {
-      setError("Please select a startup.");
+    if (!id) {
+      setError("Please select a startup to analyze.");
+      startupsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
+    setStartupId(id);
+    setResult(null);
     setLoading(true);
 
     try {
       const formData = new FormData();
       formData.append("resume", file);
-      formData.append("startupId", startupId);
+      formData.append("startupId", id);
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -108,272 +128,328 @@ export default function HomePage() {
     }
   }
 
+  function handleSelectStartup(id: string) {
+    setStartupId(id);
+    setResult(null);
+    setError(null);
+  }
+
+  function handleAnalyzeStartup(id: string) {
+    handleSelectStartup(id);
+    void runAnalysis(id);
+  }
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-card-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className={`mx-auto px-4 sm:px-6 py-4 sm:py-5 ${result ? "max-w-7xl" : "max-w-5xl"}`}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Start With Startup</h1>
-              <p className="text-muted text-sm mt-1">
-                A weekly AI agent that finds recently funded startups and creates a personalized
-                application strategy
-              </p>
-              {weekRange && (
-                <p className="text-xs text-muted/70 mt-1">
-                  {usedFallback
-                    ? `Few launches this week — showing ${startups.length} recent YC startups`
-                    : `This week (${weekRange})`}
-                  {startupsSource ? ` · ${startupsSource}` : ""}
-                </p>
-              )}
-            </div>
-            <HeaderActions />
-          </div>
-        </div>
-      </header>
+    <div className="flex min-h-screen">
+      <Sidebar />
 
-      <main className={`mx-auto px-4 sm:px-6 py-8 sm:py-10 ${result ? "max-w-7xl" : "max-w-5xl"}`}>
-        <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
-          <section className="flex flex-col lg:max-h-[calc(100vh-8rem)] lg:overflow-hidden lg:pr-1">
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 gap-4">
-              <div className="rounded-xl border border-card-border bg-card p-4 shrink-0">
-                <h2 className="text-sm font-medium text-muted mb-2">1. Upload Resume</h2>
-                <label
-                  htmlFor="resume"
-                  className="flex items-center gap-3 w-full px-4 py-3 border border-dashed border-card-border rounded-lg cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+      <div className="flex-1 flex flex-col min-w-0">
+        <DashboardHeader search={search} onSearchChange={setSearch} />
+
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+          {/* Quick Actions + Metrics */}
+          <section>
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 lg:flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0] ?? null;
+                    setFile(selected);
+                    setResult(null);
+                    setError(null);
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center justify-center gap-3 flex-1 px-6 py-4 rounded-2xl bg-card border border-card-border shadow-card hover:shadow-lg transition-shadow text-left"
                 >
-                  <svg
-                    className="w-5 h-5 text-muted shrink-0"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <span className="text-sm text-muted truncate min-w-0">
-                    {file ? file.name : "Click to upload PDF"}
-                  </span>
-                  {file && (
-                    <span className="text-xs text-accent shrink-0 ml-auto">Change</span>
-                  )}
-                  <input
-                    id="resume"
-                    type="file"
-                    accept="application/pdf"
-                    className="hidden"
-                    onChange={(e) => {
-                      const selected = e.target.files?.[0] ?? null;
-                      setFile(selected);
-                      setResult(null);
-                    }}
-                  />
-                </label>
-              </div>
-
-              <div className="rounded-xl border border-card-border bg-card p-4 flex flex-col flex-1 min-h-0 space-y-3">
-                <div className="flex items-center justify-between gap-2 shrink-0">
-                  <h2 className="text-sm font-medium text-muted">2. Select Startup</h2>
-                  {!startupsLoading && (
-                    <span className="text-xs text-muted">
-                      {startups.length} {usedFallback ? "recent" : "this week"}
-                    </span>
-                  )}
-                </div>
-
-                {startupsLoading ? (
-                  <div className="flex items-center justify-center py-12 text-muted text-sm gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
+                  <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.75}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                       />
                     </svg>
-                    Loading startups from Y Combinator...
                   </div>
-                ) : startups.length === 0 ? (
-                  <p className="text-sm text-muted py-8 text-center">
-                    No startups available right now. Check back later.
+                  <div className="min-w-0">
+                    <p className="font-semibold">Upload Resume</p>
+                    <p className="text-sm text-muted truncate">
+                      {file ? file.name : "PDF required for analysis"}
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void runAnalysis()}
+                  disabled={loading || startupsLoading}
+                  className="flex items-center justify-center gap-3 flex-1 px-6 py-4 rounded-2xl bg-card border border-card-border shadow-card hover:shadow-lg transition-shadow disabled:opacity-60"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.75}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold">Generate Strategy</p>
+                    <p className="text-sm text-muted">
+                      {selectedStartup ? `For ${selectedStartup.name}` : "Select a startup below"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex gap-3 shrink-0">
+                <div className="rounded-2xl bg-card border border-card-border shadow-card px-5 py-4 min-w-[8.5rem]">
+                  <div className="flex items-center gap-2 text-muted text-sm mb-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.75}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"
+                      />
+                    </svg>
+                    Active Startups
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {startupsLoading ? "—" : startups.length}
                   </p>
-                ) : (
-                  <div className="space-y-2 flex-1 min-h-[16rem] lg:min-h-0 overflow-y-auto pr-1 analysis-scroll">
-                    {startups.map((startup) => (
-                      <label
-                        key={startup.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          startupId === startup.id
-                            ? "border-accent bg-accent/10"
-                            : "border-card-border hover:border-accent/30"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="startup"
-                          value={startup.id}
-                          checked={startupId === startup.id}
-                          onChange={(e) => {
-                            setStartupId(e.target.value);
-                            setResult(null);
-                          }}
-                          className="mt-1 accent-accent"
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">{startup.name}</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">
-                              {startup.fundingAmount}
-                            </span>
-                            {startup.isHiring && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">
-                                Hiring
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted mt-0.5">
-                            {startup.industry}
-                            {startup.location ? ` · ${startup.location}` : ""}
-                          </p>
-                          <p className="text-sm text-muted/80 mt-1 line-clamp-2">
-                            {startup.description}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 shrink-0">
-                  {error}
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={loading || startupsLoading || !file || !startupId}
-                className="w-full py-3 px-4 rounded-lg bg-accent hover:bg-accent-hover text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors shrink-0"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
+                <div className="rounded-2xl bg-card border border-card-border shadow-card px-5 py-4 min-w-[8.5rem]">
+                  <div className="flex items-center gap-2 text-muted text-sm mb-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.75}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    Analyzing with Gemini...
-                  </span>
-                ) : (
-                  "Analyze Match"
-                )}
-              </button>
-            </form>
+                    Hiring Now
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {startupsLoading ? "—" : hiringCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {weekRange && (
+              <p className="text-xs text-muted mt-3">
+                {usedFallback
+                  ? `Few launches this week — showing ${startups.length} recent YC startups`
+                  : `This week (${weekRange})`}
+                {startupsSource ? ` · ${startupsSource}` : ""}
+              </p>
+            )}
           </section>
 
-          <section
-            ref={resultsRef}
-            className="lg:sticky lg:top-24 scroll-mt-24"
-          >
+          {error && (
+            <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-3 text-sm text-red-600 dark:text-red-300">
+              {error}
+            </div>
+          )}
+
+          {/* Featured Startups */}
+          <section ref={startupsRef}>
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <h2 className="text-lg font-semibold">Featured Startups</h2>
+              {!startupsLoading && search && (
+                <span className="text-sm text-muted">
+                  {filteredStartups.length} of {startups.length}
+                </span>
+              )}
+            </div>
+
+            {startupsLoading ? (
+              <div className="flex items-center justify-center py-16 text-muted text-sm gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Loading startups from Y Combinator...
+              </div>
+            ) : filteredStartups.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-card-border bg-card/50 py-16 text-center text-muted text-sm">
+                {search ? "No startups match your search." : "No startups available right now."}
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredStartups.map((startup) => (
+                  <StartupCard
+                    key={startup.id}
+                    startup={startup}
+                    selected={startupId === startup.id}
+                    onSelect={() => handleSelectStartup(startup.id)}
+                    onAnalyze={() => handleAnalyzeStartup(startup.id)}
+                    disabled={loading}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* AI Strategy / Analysis */}
+          <section ref={resultsRef} className="scroll-mt-24">
+            <h2 className="text-lg font-semibold mb-5">AI Strategy Modules</h2>
+
             {loading && (
-              <div className="rounded-xl border border-card-border bg-card p-8 text-center lg:max-h-[calc(100vh-8rem)]">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/20 mb-4">
-                  <svg className="animate-spin h-6 w-6 text-accent" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
+              <div className="rounded-2xl border border-card-border bg-card shadow-card overflow-hidden">
+                <div className="gradient-primary px-6 py-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">Growth Catalyst AI</p>
+                    <p className="text-sm text-white/80">
+                      Analyzing fit for {selectedStartup?.name}...
+                    </p>
+                  </div>
                 </div>
-                <p className="text-muted">
-                  Extracting resume text and analyzing fit for{" "}
-                  <span className="text-foreground font-medium">{selectedStartup?.name}</span>...
-                </p>
+                <div className="p-8 text-center text-muted text-sm">
+                  Extracting resume text and generating your personalized application strategy.
+                </div>
               </div>
             )}
 
             {!loading && !result && (
-              <div className="rounded-xl border border-dashed border-card-border bg-card/30 p-8 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-card-border/50 mb-4">
-                  <svg
-                    className="w-6 h-6 text-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <div className="rounded-2xl border border-card-border bg-card shadow-card overflow-hidden">
+                  <div className="gradient-primary px-5 py-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.75}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      <span className="font-semibold text-white text-sm">Growth Catalyst AI</span>
+                    </div>
+                  </div>
+                  <ul className="px-5 py-4 space-y-2.5 text-sm text-muted">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Optimize your pitch for funded startups
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Identify skill gaps and strengths
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Tailored application talking points
+                    </li>
+                  </ul>
                 </div>
-                <p className="text-muted">
-                  Upload your resume and select a startup to see your personalized match analysis.
-                </p>
+
+                <div className="rounded-2xl border border-card-border bg-card shadow-card overflow-hidden">
+                  <div className="gradient-primary px-5 py-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.75}
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                        />
+                      </svg>
+                      <span className="font-semibold text-white text-sm">Match Intelligence</span>
+                    </div>
+                  </div>
+                  <ul className="px-5 py-4 space-y-2.5 text-sm text-muted">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Resume-to-startup fit scoring
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Role alignment recommendations
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      Weekly YC launch coverage
+                    </li>
+                  </ul>
+                </div>
               </div>
             )}
 
             {!loading && result && (
-              <div className="rounded-xl border border-card-border bg-card overflow-hidden flex flex-col max-h-[min(75vh,calc(100vh-10rem))] sm:max-h-[min(80vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)]">
-                <div className="shrink-0 px-4 sm:px-6 py-4 border-b border-card-border bg-accent/5">
-                  <h2 className="text-lg font-medium">
-                    Analysis for {result.startup.name}
-                  </h2>
-                  <p className="text-sm text-muted mt-0.5">
-                    {result.startup.fundingAmount} · {result.startup.industry}
-                  </p>
-                  <p className="text-xs text-muted/70 mt-2">
-                    Scroll inside this panel to read your full analysis
-                  </p>
+              <div className="rounded-2xl border border-card-border bg-card shadow-card overflow-hidden flex flex-col max-h-[min(80vh,calc(100vh-8rem))]">
+                <div className="gradient-primary px-5 sm:px-6 py-4 shrink-0 flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.75}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-white truncate">
+                        Strategy for {result.startup.name}
+                      </h3>
+                      <p className="text-sm text-white/80 truncate">
+                        {result.startup.fundingAmount} · {result.startup.industry}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 prose-analysis analysis-scroll">
+                <div className="overflow-y-auto flex-1 px-5 sm:px-6 py-5 prose-analysis analysis-scroll">
                   <ReactMarkdown>{result.analysis}</ReactMarkdown>
                 </div>
               </div>
             )}
           </section>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ async function generateWithModel(
   genAI: GoogleGenerativeAI,
   modelName: string,
   prompt: string
-): Promise<{ analysis: string; modelUsed: string }> {
+): Promise<string> {
   const model = genAI.getGenerativeModel({ model: modelName });
 
   let lastError: unknown;
@@ -47,7 +47,7 @@ async function generateWithModel(
         throw new Error("No response from Gemini");
       }
 
-      return { analysis: text, modelUsed: modelName };
+      return text;
     } catch (error) {
       lastError = error;
 
@@ -65,7 +65,7 @@ async function generateWithModel(
 export async function analyzeResumeForStartup(
   startup: Startup,
   resumeText: string
-): Promise<{ analysis: string; modelUsed: string }> {
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured");

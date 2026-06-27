@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { FeedbackProvider } from "@/components/FeedbackWidget";
-import { PostHogProvider } from "@/components/PostHogProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
@@ -25,8 +23,8 @@ const themeScript = `
   (function () {
     try {
       var theme = localStorage.getItem("theme");
-      if (theme === "light") {
-        document.documentElement.classList.add("light");
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
       }
     } catch (e) {}
   })();
@@ -43,11 +41,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>
-          <PostHogProvider>
-            <FeedbackProvider>{children}</FeedbackProvider>
-          </PostHogProvider>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

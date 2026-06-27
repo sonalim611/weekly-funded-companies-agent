@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeResumeForStartup } from "@/lib/gemini";
 import { extractTextFromPdf } from "@/lib/pdf";
-import {
-  recordGeneratedStrategy,
-  recordStartupAnalysisSearch,
-} from "@/lib/supabase/records";
 import { getStartupById } from "@/lib/yc";
 
 export async function POST(request: NextRequest) {
@@ -30,20 +26,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid startup selected" }, { status: 400 });
     }
 
-    const startupSearchId = await recordStartupAnalysisSearch({ startup });
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const resumeText = await extractTextFromPdf(buffer);
-    const { analysis, modelUsed } = await analyzeResumeForStartup(startup, resumeText);
-
-    await recordGeneratedStrategy({
-      startup,
-      analysis,
-      resumeTextLength: resumeText.length,
-      modelUsed,
-      startupSearchId,
-    });
+    const analysis = await analyzeResumeForStartup(startup, resumeText);
 
     return NextResponse.json({
       startup,

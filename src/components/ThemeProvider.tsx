@@ -13,12 +13,12 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  return document.documentElement.classList.contains("light") ? "light" : "dark";
+  if (typeof window === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("light", theme === "light");
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
