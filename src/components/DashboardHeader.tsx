@@ -11,7 +11,7 @@ export function DashboardHeader({ search, onSearchChange }: DashboardHeaderProps
   return (
     <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-card-border">
       <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-8 py-4">
-        <div className="lg:hidden w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
+        <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
           S
         </div>
 

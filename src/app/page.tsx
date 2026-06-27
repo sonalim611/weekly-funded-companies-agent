@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { Sidebar } from "@/components/Sidebar";
 import { StartupCard } from "@/components/StartupCard";
 import type { Startup } from "@/lib/startups";
 
@@ -40,16 +39,24 @@ export default function HomePage() {
   const selectedStartup = startups.find((s) => s.id === startupId);
   const hiringCount = startups.filter((s) => s.isHiring).length;
 
-  const filteredStartups = startups.filter((startup) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      startup.name.toLowerCase().includes(q) ||
-      startup.industry.toLowerCase().includes(q) ||
-      startup.description.toLowerCase().includes(q) ||
-      (startup.location?.toLowerCase().includes(q) ?? false)
-    );
-  });
+  const filteredStartups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matches = startups.filter((startup) => {
+      if (!q) return true;
+      return (
+        startup.name.toLowerCase().includes(q) ||
+        startup.industry.toLowerCase().includes(q) ||
+        startup.description.toLowerCase().includes(q) ||
+        (startup.location?.toLowerCase().includes(q) ?? false)
+      );
+    });
+
+    return [...matches].sort((a, b) => {
+      if (a.isHiring && !b.isHiring) return -1;
+      if (!a.isHiring && b.isHiring) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [startups, search]);
 
   useEffect(() => {
     if (!result || !resultsRef.current) return;
@@ -140,13 +147,10 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
+    <div className="min-h-screen flex flex-col">
+      <DashboardHeader search={search} onSearchChange={setSearch} />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <DashboardHeader search={search} onSearchChange={setSearch} />
-
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 max-w-7xl mx-auto w-full">
           {/* Quick Actions + Metrics */}
           <section>
             <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
@@ -267,11 +271,18 @@ export default function HomePage() {
 
           {/* Featured Startups */}
           <section ref={startupsRef}>
-            <div className="flex items-center justify-between gap-4 mb-5">
-              <h2 className="text-lg font-semibold">Featured Startups</h2>
-              {!startupsLoading && search && (
-                <span className="text-sm text-muted">
-                  {filteredStartups.length} of {startups.length}
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <div>
+                <h2 className="text-lg font-semibold">Featured Startups</h2>
+                {!startupsLoading && filteredStartups.length > 0 && (
+                  <p className="text-xs text-muted mt-1">
+                    Hiring startups shown first · scroll to browse
+                  </p>
+                )}
+              </div>
+              {!startupsLoading && (
+                <span className="text-sm text-muted shrink-0">
+                  {search ? `${filteredStartups.length} of ${startups.length}` : startups.length}
                 </span>
               )}
             </div>
@@ -301,17 +312,19 @@ export default function HomePage() {
                 {search ? "No startups match your search." : "No startups available right now."}
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredStartups.map((startup) => (
-                  <StartupCard
-                    key={startup.id}
-                    startup={startup}
-                    selected={startupId === startup.id}
-                    onSelect={() => handleSelectStartup(startup.id)}
-                    onAnalyze={() => handleAnalyzeStartup(startup.id)}
-                    disabled={loading}
-                  />
-                ))}
+              <div className="max-h-[min(28rem,calc(100vh-22rem))] overflow-y-auto analysis-scroll pr-1 -mr-1">
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 pb-1">
+                  {filteredStartups.map((startup) => (
+                    <StartupCard
+                      key={startup.id}
+                      startup={startup}
+                      selected={startupId === startup.id}
+                      onSelect={() => handleSelectStartup(startup.id)}
+                      onAnalyze={() => handleAnalyzeStartup(startup.id)}
+                      disabled={loading}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </section>
@@ -449,7 +462,6 @@ export default function HomePage() {
             )}
           </section>
         </main>
-      </div>
     </div>
   );
 }
