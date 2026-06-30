@@ -16,9 +16,15 @@ const valuePoints = [
 
 export default function LandingPage() {
   const demoVideoUrl = process.env.NEXT_PUBLIC_DEMO_VIDEO_URL;
+  const demoVideoPoster =
+    process.env.NEXT_PUBLIC_DEMO_VIDEO_POSTER_URL ??
+    (demoVideoUrl?.match(/\.mp4$/i) ? demoVideoUrl.replace(/\.mp4$/i, "-poster.jpg") : undefined);
 
   return (
     <div className="min-h-screen flex flex-col">
+      {demoVideoPoster ? (
+        <link rel="preload" as="image" href={demoVideoPoster} />
+      ) : null}
       <header className="px-4 sm:px-6 lg:px-8 py-5">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold">
@@ -59,9 +65,9 @@ export default function LandingPage() {
 
           <section className="w-full space-y-4">
             <p className="text-sm font-medium text-muted uppercase tracking-wide">
-              See it in action · 30 seconds
+              See it in action · 15 seconds
             </p>
-            <DemoVideo src={demoVideoUrl} />
+            <DemoVideo src={demoVideoUrl} poster={demoVideoPoster} />
           </section>
 
           <section className="space-y-4 pt-2">
