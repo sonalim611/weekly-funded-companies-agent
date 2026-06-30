@@ -59,13 +59,17 @@ export default function HomePage() {
   }, [startups, search]);
 
   useEffect(() => {
-    if (!result || !resultsRef.current) return;
+    if (!resultsRef.current || (!loading && !result)) return;
 
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
-    if (isMobile) {
-      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [result]);
+    const scrollToResults = () => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    // Wait for the analysis panel to render before scrolling.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToResults);
+    });
+  }, [loading, result]);
 
   useEffect(() => {
     async function loadStartups() {
@@ -319,6 +323,7 @@ export default function HomePage() {
                       key={startup.id}
                       startup={startup}
                       selected={startupId === startup.id}
+                      analyzing={loading && startupId === startup.id}
                       onSelect={() => handleSelectStartup(startup.id)}
                       onAnalyze={() => handleAnalyzeStartup(startup.id)}
                       disabled={loading}
