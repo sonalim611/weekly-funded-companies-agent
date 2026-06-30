@@ -6,16 +6,22 @@ export const siteDescription =
   "Match your resume to recently funded YC startups and get a personalized application strategy in minutes.";
 
 export const ogImage = {
-  url: "/og-image.png",
+  url: "/og-image.jpg",
   width: 1200,
   height: 630,
   alt: "StartWithStartup — Land your role at a recently funded startup",
+  type: "image/jpeg",
 } as const;
 
 export function getSiteUrl(): URL {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (fromEnv) {
     return new URL(fromEnv.endsWith("/") ? fromEnv : `${fromEnv}/`);
+  }
+
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (productionUrl) {
+    return new URL(`https://${productionUrl}/`);
   }
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
