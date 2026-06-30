@@ -1,6 +1,5 @@
 "use client";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackButton } from "@/components/FeedbackButton";
 
 interface DashboardHeaderProps {
@@ -52,7 +51,6 @@ export function DashboardHeader({
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
           <FeedbackButton onClick={onOpenFeedback} />
-          <ThemeToggle />
         </div>
       </div>
 

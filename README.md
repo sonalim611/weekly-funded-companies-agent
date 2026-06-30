@@ -4,6 +4,7 @@ A weekly AI agent that finds recently funded startups and creates a personalized
 
 ## Features
 
+- Landing page with headline, value proposition, demo video, and CTA
 - Upload a resume PDF
 - Select from YC startups launched in the past 7 days, with a fallback to recent launches when the weekly list is thin
 - AI-powered analysis including:
@@ -14,7 +15,6 @@ A weekly AI agent that finds recently funded startups and creates a personalized
   - Application strategy
   - LinkedIn outreach message
 - In-app feedback form (rating + what worked + what was confusing + requested feature)
-- Light and dark mode
 
 ## Setup
 
@@ -44,7 +44,7 @@ Use the script in `scripts/google-apps-script-feedback.js` — it creates that s
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for the landing page, or go directly to [http://localhost:3000/app](http://localhost:3000/app) for the dashboard.
 
 ## Tech Stack
 

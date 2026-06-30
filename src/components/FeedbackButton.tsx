@@ -1,6 +1,7 @@
 "use client";
 
-import { headerActionButtonClassName } from "@/components/ThemeToggle";
+const headerActionButtonClassName =
+  "inline-flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:px-3 sm:py-2 rounded-full border border-card-border bg-card shadow-soft text-sm font-medium text-muted hover:text-foreground hover:border-accent/40 transition-colors";
 
 interface FeedbackButtonProps {
   onClick: () => void;
