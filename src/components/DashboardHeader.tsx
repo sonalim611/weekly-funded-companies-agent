@@ -1,13 +1,19 @@
 "use client";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FeedbackButton } from "@/components/FeedbackButton";
 
 interface DashboardHeaderProps {
   search: string;
   onSearchChange: (value: string) => void;
+  onOpenFeedback: () => void;
 }
 
-export function DashboardHeader({ search, onSearchChange }: DashboardHeaderProps) {
+export function DashboardHeader({
+  search,
+  onSearchChange,
+  onOpenFeedback,
+}: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-card-border">
       <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-8 py-4">
@@ -45,6 +51,7 @@ export function DashboardHeader({ search, onSearchChange }: DashboardHeaderProps
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+          <FeedbackButton onClick={onOpenFeedback} />
           <ThemeToggle />
         </div>
       </div>

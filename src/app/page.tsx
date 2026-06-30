@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { StartupCard } from "@/components/StartupCard";
 import type { Startup } from "@/lib/startups";
 
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
   const startupsRef = useRef<HTMLElement>(null);
@@ -152,7 +154,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DashboardHeader search={search} onSearchChange={setSearch} />
+      <DashboardHeader
+        search={search}
+        onSearchChange={setSearch}
+        onOpenFeedback={() => setFeedbackOpen(true)}
+      />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 max-w-7xl mx-auto w-full">
           {/* Quick Actions + Metrics */}
@@ -467,6 +473,7 @@ export default function HomePage() {
             )}
           </section>
         </main>
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

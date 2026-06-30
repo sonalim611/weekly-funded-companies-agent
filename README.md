@@ -13,6 +13,7 @@ A weekly AI agent that finds recently funded startups and creates a personalized
   - Resume improvement recommendations
   - Application strategy
   - LinkedIn outreach message
+- In-app feedback form (rating + what worked + what was confusing + requested feature)
 - Light and dark mode
 
 ## Setup
@@ -30,6 +31,12 @@ cp .env.example .env.local
 ```
 
 Get an API key from [Google AI Studio](https://aistudio.google.com/apikey).
+
+To store feedback in Google Sheets, also set `GOOGLE_SHEETS_FEEDBACK_WEBHOOK_URL` in `.env.local`.
+This should point to your Google Apps Script Web App URL.
+
+Feedback is saved to a spreadsheet named **`StartupFeedback`** in your Google Drive (tab: `Feedback`).
+Use the script in `scripts/google-apps-script-feedback.js` — it creates that spreadsheet automatically on the first submission.
 
 3. Run the development server:
 
