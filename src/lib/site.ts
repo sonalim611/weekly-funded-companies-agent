@@ -6,7 +6,7 @@ export const siteDescription =
   "Match your resume to recently funded YC startups and get a personalized application strategy in minutes.";
 
 export const ogImage = {
-  url: "/og-image.jpg",
+  url: "/og-image.jpg?v=2",
   width: 1200,
   height: 630,
   alt: "StartWithStartup — Land your role at a recently funded startup",
