@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSiteUrl, ogImage, siteDescription, siteName } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +13,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const defaultTitle = `${siteName} — Land your role at a funded startup`;
+
 export const metadata: Metadata = {
-  title: "Start With Startup",
-  description:
-    "A weekly AI agent that finds recently funded startups and creates a personalized application strategy",
+  metadataBase: getSiteUrl(),
+  title: {
+    default: defaultTitle,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName,
+    title: defaultTitle,
+    description: siteDescription,
+    images: [ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: siteDescription,
+    images: [ogImage.url],
+  },
 };
 
 export default function RootLayout({

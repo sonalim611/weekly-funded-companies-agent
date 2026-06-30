@@ -1,12 +1,13 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { DemoVideo } from "@/components/DemoVideo";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata = buildPageMetadata({
   title: "StartWithStartup — Land your role at a funded startup",
   description:
     "Match your resume to recently funded YC startups and get a personalized application strategy in minutes.",
-};
+  path: "/",
+});
 
 const valuePoints = [
   "Discover recently funded YC startups hiring this week",
