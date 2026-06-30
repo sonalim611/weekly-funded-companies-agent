@@ -38,6 +38,8 @@ This should point to your Google Apps Script Web App URL.
 Feedback is saved to a spreadsheet named **`StartupFeedback`** in your Google Drive (tab: `Feedback`).
 Use the script in `scripts/google-apps-script-feedback.js` — it creates that spreadsheet automatically on the first submission.
 
+For Vercel, add `GOOGLE_SHEETS_FEEDBACK_WEBHOOK_URL` in **Project Settings → Environment Variables** (Production), then redeploy. Use the deployed Web App URL ending in `/exec`, not `/dev`.
+
 3. Run the development server:
 
 ```bash
