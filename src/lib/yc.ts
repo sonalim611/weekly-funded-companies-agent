@@ -2,6 +2,9 @@ import type { Startup } from "./startups";
 
 const YC_META_URL = "https://yc-oss.github.io/api/meta.json";
 const RECENT_BATCH_COUNT = 2;
+const MAX_BATCHES_TO_FETCH = 4;
+const MIN_BATCH_COMPANIES = 10;
+const MIN_COMPANY_POOL = 80;
 const LOOKBACK_DAYS = 7;
 const MIN_WEEKLY_COUNT = 10;
 const MAX_FALLBACK = 40;
@@ -74,14 +77,47 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/**
+ * Pick newest YC batches, skipping tiny placeholder batches, until we have
+ * a usable company pool (avoids Winter/Summer 2027 stubs with ~15 total).
+ */
 async function getRecentBatchApis(): Promise<string[]> {
   const meta = await fetchJson<YCMeta>(YC_META_URL);
 
-  return Object.values(meta.batches)
+  const sorted = Object.values(meta.batches)
     .filter((batch) => batch.count > 0)
-    .sort((a, b) => batchSortKey(b.name) - batchSortKey(a.name))
-    .slice(0, RECENT_BATCH_COUNT)
-    .map((batch) => batch.api);
+    .sort((a, b) => batchSortKey(b.name) - batchSortKey(a.name));
+
+  const substantial = sorted.filter((batch) => batch.count >= MIN_BATCH_COMPANIES);
+  const pool = substantial.length > 0 ? substantial : sorted;
+
+  const selected: typeof pool = [];
+  let total = 0;
+
+  for (const batch of pool) {
+    selected.push(batch);
+    total += batch.count;
+    if (selected.length >= RECENT_BATCH_COUNT && total >= MIN_COMPANY_POOL) {
+      break;
+    }
+    if (selected.length >= MAX_BATCHES_TO_FETCH) {
+      break;
+    }
+  }
+
+  return selected.map((batch) => batch.api);
+}
+
+async function loadRecentCompanies(): Promise<YCCompany[]> {
+  const batchApis = await getRecentBatchApis();
+  const companies: YCCompany[] = [];
+
+  for (const api of batchApis) {
+    const batchCompanies = await fetchJson<YCCompany[]>(api);
+    companies.push(...batchCompanies);
+  }
+
+  return companies;
 }
 
 export async function fetchWeeklyStartups(): Promise<{
@@ -92,26 +128,21 @@ export async function fetchWeeklyStartups(): Promise<{
   weekEnd: string;
   usedFallback: boolean;
 }> {
-  const batchApis = await getRecentBatchApis();
-  const companies: YCCompany[] = [];
-
-  for (const api of batchApis) {
-    const batchCompanies = await fetchJson<YCCompany[]>(api);
-    companies.push(...batchCompanies);
-  }
+  const companies = await loadRecentCompanies();
 
   const lookbackSeconds = LOOKBACK_DAYS * 24 * 60 * 60;
   const cutoff = Math.floor(Date.now() / 1000) - lookbackSeconds;
   const now = new Date();
 
   const active = companies
-    .filter((c) => c.status === "Active")
+    .filter((c) => c.status === "Active" && typeof c.slug === "string" && c.slug.trim().length > 0)
     .sort((a, b) => b.launched_at - a.launched_at);
 
   const weekly = active.filter((c) => c.launched_at >= cutoff);
   const usedFallback = weekly.length < MIN_WEEKLY_COUNT;
 
   const selected = usedFallback ? active.slice(0, MAX_FALLBACK) : weekly;
+  const startups = selected.map(toStartup);
 
   const weekEnd = now.toISOString().split("T")[0];
   const weekStart = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
@@ -119,7 +150,7 @@ export async function fetchWeeklyStartups(): Promise<{
     .split("T")[0];
 
   return {
-    startups: selected.map(toStartup),
+    startups,
     fetchedAt: now.toISOString(),
     source: "Y Combinator (yc-oss/api)",
     weekStart,
@@ -128,7 +159,30 @@ export async function fetchWeeklyStartups(): Promise<{
   };
 }
 
+/**
+ * Validate startupId against live YC data from recent batches (full pool,
+ * not the truncated dashboard list of 40).
+ */
 export async function getStartupById(id: string): Promise<Startup | undefined> {
-  const { startups } = await fetchWeeklyStartups();
-  return startups.find((s) => s.id === id);
+  const normalizedId = typeof id === "string" ? id.trim() : "";
+  if (!normalizedId) {
+    console.warn("[yc] getStartupById called with empty id");
+    return undefined;
+  }
+
+  const companies = await loadRecentCompanies();
+  const activeMatch = companies.find(
+    (c) => c.status === "Active" && c.slug === normalizedId,
+  );
+  const anyMatch = activeMatch ?? companies.find((c) => c.slug === normalizedId);
+
+  if (!anyMatch?.slug) {
+    console.warn("[yc] Startup not found in recent YC batches", {
+      startupId: normalizedId,
+      poolCount: companies.length,
+    });
+    return undefined;
+  }
+
+  return toStartup(anyMatch);
 }

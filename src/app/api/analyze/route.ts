@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("resume") as File | null;
-    const startupId = formData.get("startupId") as string | null;
+    const startupIdRaw = formData.get("startupId");
+    const startupId = typeof startupIdRaw === "string" ? startupIdRaw.trim() : null;
 
     if (!file) {
       return NextResponse.json({ error: "Resume PDF is required" }, { status: 400 });
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     const startup = await getStartupById(startupId);
     if (!startup) {
+      console.warn("[analyze] Rejected unknown startupId", { startupId });
       return NextResponse.json({ error: "Invalid startup selected" }, { status: 400 });
     }
 
